@@ -39,7 +39,7 @@ func Bytes(s uint64) string {
 	return humanateBytes(s, 1000, sizes)
 }
 
-func BenchmarkDiffGenerator(b *testing.B) {
+func BenchmarkRustDiffGenerator(b *testing.B) {
 	var (
 		maxTotal uint64 = 0
 		maxInUse uint64 = 0
@@ -75,8 +75,48 @@ func BenchmarkDiffGenerator(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		RustDiff(string(before), string(after))
-		//GoDiff(string(before), string(after))
 	}
 
-	fmt.Printf("Final \nTotalAlloc: %s\nHeapAlloc: %s\nHeapInuse: %s\n\n\n", Bytes(maxTotal), Bytes(maxAlloc), Bytes(maxInUse))
+	fmt.Printf("\nTotalAlloc: %s\nHeapAlloc: %s\nHeapInuse: %s\n", Bytes(maxTotal), Bytes(maxAlloc), Bytes(maxInUse))
+}
+
+func BenchmarkGoDiffGenerator(b *testing.B) {
+	var (
+		maxTotal uint64 = 0
+		maxInUse uint64 = 0
+		maxAlloc uint64 = 0
+	)
+
+	go func() {
+		for {
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+
+			time.Sleep(10 * time.Millisecond)
+
+			go func(a, b, c uint64) {
+				maxTotal = max(maxTotal, a)
+				maxInUse = max(maxInUse, b)
+				maxAlloc = max(maxAlloc, c)
+			}(m.TotalAlloc, m.HeapAlloc, m.HeapInuse)
+		}
+	}()
+
+	before, err := os.ReadFile("echo_server.json")
+	if err != nil {
+		b.Fatalf("failed to open file echo_server.json: %v", err)
+	}
+
+	after, err := os.ReadFile("echo_server_new.json")
+	if err != nil {
+		b.Fatalf("failed to open file echo_server_new.json: %v", err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		GoDiff(string(before), string(after))
+	}
+
+	fmt.Printf("\nTotalAlloc: %s\nHeapAlloc: %s\nHeapInuse: %s\n", Bytes(maxTotal), Bytes(maxAlloc), Bytes(maxInUse))
 }
