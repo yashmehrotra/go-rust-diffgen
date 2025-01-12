@@ -1,0 +1,3 @@
+lib/diffgen/target
+*.a
+*.so

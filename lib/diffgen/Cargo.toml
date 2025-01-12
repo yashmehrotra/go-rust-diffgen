@@ -1,0 +1,10 @@
+[package]
+name = "diffgen"
+version = "0.1.0"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+libc = "0.2.2"
+similar = { git = "https://github.com/mitsuhiko/similar", version = "2.6.0" }
